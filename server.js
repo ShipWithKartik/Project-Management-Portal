@@ -4,24 +4,33 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
 const bcrypt = require("bcryptjs");
-const { Pool } = require("@neondatabase/serverless");
+const { Pool, neonConfig } = require("@neondatabase/serverless");
+const ws = require("ws");
 
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Create pool using Neon serverless driver (HTTP-based)
+// ✅ Enable WebSocket for Neon serverless in Node.js
+neonConfig.webSocketConstructor = ws;
+
+// ✅ Create pool using Neon serverless driver (HTTP-based)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
-// Test database connection immediately on startup
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('Unexpected pool error:', err.message);
+});
+
+// Test database connection
 (async function testDBConnection() {
   try {
-    const client = await pool.connect();
-    console.log("Successfully connected to PostgreSQL database");
-    client.release();
+    const result = await pool.query("SELECT NOW()");
+    console.log("✅ Successfully connected to PostgreSQL database (Neon serverless)");
+    console.log("Database time:", result.rows[0].now);
   } catch (error) {
-    console.error("Error connecting to PostgreSQL database:", error);
+    console.error("❌ Database connection failed:", error.message);
   }
 })();
 
@@ -110,7 +119,7 @@ async function initializeDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS ideas (
         id SERIAL PRIMARY KEY,
-        user_email TEXT REFERENCES users(email),
+        user_email TEXT,
         title TEXT,
         content TEXT,
         category TEXT DEFAULT 'general',
@@ -121,7 +130,7 @@ async function initializeDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS notes (
         id SERIAL PRIMARY KEY,
-        user_email TEXT REFERENCES users(email),
+        user_email TEXT,
         title TEXT,
         content TEXT,
         created_date TEXT
@@ -131,7 +140,7 @@ async function initializeDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS career_goals (
         id SERIAL PRIMARY KEY,
-        user_email TEXT REFERENCES users(email),
+        user_email TEXT,
         title TEXT,
         description TEXT,
         progress INTEGER DEFAULT 0,
@@ -159,7 +168,7 @@ async function initializeDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS future_work (
         id SERIAL PRIMARY KEY,
-        user_email TEXT REFERENCES users(email),
+        user_email TEXT,
         title TEXT,
         description TEXT,
         priority TEXT DEFAULT 'medium',
@@ -171,7 +180,7 @@ async function initializeDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS deadlines (
         id SERIAL PRIMARY KEY,
-        user_email TEXT REFERENCES users(email),
+        user_email TEXT,
         title TEXT,
         description TEXT,
         due_date TEXT,
@@ -249,8 +258,49 @@ async function initializeDatabase() {
   }
 }
 
+// Migration function to drop foreign key constraints
+async function migrateForeignKeys() {
+  const client = await pool.connect();
+  try {
+    console.log('Running migration to drop foreign key constraints...');
+
+    // Drop foreign key constraints if they exist
+    const tables = ['ideas', 'notes', 'career_goals', 'future_work', 'deadlines'];
+
+    for (const table of tables) {
+      try {
+        // Get constraint name
+        const constraintQuery = await client.query(`
+          SELECT constraint_name 
+          FROM information_schema.table_constraints 
+          WHERE table_name = $1 
+          AND constraint_type = 'FOREIGN KEY'
+          AND constraint_name LIKE '%user_email%'
+        `, [table]);
+
+        // Drop each constraint
+        for (const row of constraintQuery.rows) {
+          await client.query(`ALTER TABLE ${table} DROP CONSTRAINT IF EXISTS ${row.constraint_name}`);
+          console.log(`✅ Dropped constraint ${row.constraint_name} from ${table}`);
+        }
+      } catch (err) {
+        console.log(`⚠️  No foreign key constraint to drop for ${table} or already dropped`);
+      }
+    }
+
+    console.log('Migration completed successfully');
+  } catch (error) {
+    console.error('Migration error:', error.message);
+  } finally {
+    client.release();
+  }
+}
+
 // Initialize database on startup
-initializeDatabase();
+initializeDatabase().then(() => {
+  // Run migration after initialization
+  migrateForeignKeys();
+});
 
 // ===================== AUTH API WITH PASSWORD HASHING =====================
 

@@ -289,32 +289,222 @@
       }
     }
 
-    .main-nav {
+    /* --- Landing Page Header --- */
+    .landing-header {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      padding: 30px 50px;
+      padding: 25px 50px;
+      z-index: 10;
+      background: transparent;
+      transition: all 0.3s ease;
+    }
+
+    .landing-header.scrolled {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      z-index: 10;
+    }
+
+    .brand-logo {
+      font-family: var(--font-heading);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent-secondary);
+      letter-spacing: -0.5px;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .brand-logo:hover {
+      color: var(--accent-primary);
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .nav-links {
+      display: flex;
+      list-style: none;
+      gap: 35px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .nav-link {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-decoration: none;
+      position: relative;
+      transition: color 0.3s;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent-primary);
+      transition: width 0.3s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-primary);
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .cta-button {
+      padding: 12px 28px;
+      background: var(--accent-secondary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(23, 58, 42, 0.2);
+    }
+
+    .cta-button:hover {
+      background: var(--accent-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(23, 58, 42, 0.3);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+      gap: 5px;
+      padding: 5px;
+    }
+
+    .hamburger span {
+      width: 28px;
+      height: 3px;
+      background: var(--accent-secondary);
+      transition: all 0.3s;
+      border-radius: 2px;
+    }
+
+    .hamburger.active span:nth-child(1) {
+      transform: rotate(45deg) translate(8px, 8px);
+    }
+
+    .hamburger.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+
+    @media (max-width: 968px) {
+      .landing-header {
+        padding: 20px 30px;
+      }
+
+      .hamburger {
+        display: flex;
+        order: 3;
+      }
+
+      .header-nav {
+        gap: 20px;
+      }
+
+      .nav-links {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+        flex-direction: column;
+        padding: 100px 40px 40px;
+        gap: 25px;
+        transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
+        border-left: 1px solid rgba(224, 220, 205, 0.5);
+      }
+
+      .nav-links.mobile-active {
+        right: 0;
+      }
+
+      .nav-link {
+        font-size: 1.1rem;
+      }
+
+      .cta-button {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .landing-header {
+        padding: 18px 20px;
+      }
+
+      .brand-logo {
+        font-size: 1.5rem;
+      }
+
+      .nav-links {
+        width: 100%;
+        right: -100%;
+      }
     }
   </style>
 </head>
 
 <body>
-  <!-- Navigation -->
-  <nav class="main-nav">
-    <div class="brand-logo">UniDesk</div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
-      <li><a href="projects.html" class="nav-link">Projects</a></li>
-      <li><a href="profile.html" class="nav-link">Team</a></li>
-      <li><a href="#" class="nav-link">Reports</a></li>
-      <li><a href="#" class="nav-link" id="navLoginBtn">Account</a></li>
-    </ul>
-  </nav>
+  <!-- Landing Page Header -->
+  <header class="landing-header" id="landingHeader">
+    <div class="header-container">
+      <div class="brand-logo">UniDesk</div>
+
+      <nav class="header-nav">
+        <div class="hamburger" id="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <ul class="nav-links" id="navLinks">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="aboutus.html" class="nav-link">About Us</a></li>
+          <li><a href="#" class="nav-link">Reports</a></li>
+          <li><a href="outlook-calendar.html" class="nav-link">Calendar</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
 
   <!-- Hero Section -->
   <header class="hero-section">
@@ -393,11 +583,63 @@
 
   <!-- Modal Logic Script -->
   <script>
+    // --- Landing Page Header Interactions ---
+    const landingHeader = document.getElementById('landingHeader');
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('navLinks');
+    const getStartedBtn = document.getElementById('getStartedBtn');
+
+    // Scroll effect for header
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        landingHeader.classList.add('scrolled');
+      } else {
+        landingHeader.classList.remove('scrolled');
+      }
+    });
+
+    // Hamburger menu toggle
+    if (hamburger) {
+      hamburger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hamburger.classList.toggle('active');
+        navLinks.classList.toggle('mobile-active');
+      });
+    }
+
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (navLinks && !navLinks.contains(e.target) && e.target !== hamburger && !hamburger.contains(e.target)) {
+        hamburger.classList.remove('active');
+        navLinks.classList.remove('mobile-active');
+      }
+    });
+
+    // Close mobile menu when clicking a nav link
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        navLinks.classList.remove('mobile-active');
+      });
+    });
+
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#' && document.querySelector(href)) {
+          e.preventDefault();
+          document.querySelector(href).scrollIntoView({
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+
     // --- UI Logic ---
     const authModal = document.getElementById('authModal');
     const authOverlay = document.getElementById('authOverlay');
     const startProjectBtn = document.getElementById('startProjectBtn');
-    const navLoginBtn = document.getElementById('navLoginBtn');
 
     // Title Elements
     const modalTitle = document.getElementById('modalTitle');
@@ -414,8 +656,9 @@
       // optional: reset forms
     }
 
+    // Open modal from CTA buttons
     if (startProjectBtn) startProjectBtn.addEventListener('click', (e) => { e.stopPropagation(); openModal(); });
-    if (navLoginBtn) navLoginBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openModal(); });
+    if (getStartedBtn) getStartedBtn.addEventListener('click', (e) => { e.stopPropagation(); openModal(); });
 
     // --- Auth Logic ---
     const API_BASE = window.location.origin;

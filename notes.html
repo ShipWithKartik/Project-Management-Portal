@@ -137,17 +137,40 @@
 </head>
 
 <body>
-  <nav class="main-nav navbar">
-    <div class="container flex justify-between items-center" style="width:100%">
-      <div class="brand-logo">UniDesk</div>
-      <ul class="nav-links">
-        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
-        <li><a href="projects.html" class="nav-link">Projects</a></li>
-        <li><a href="aboutus.html" class="nav-link">About Us</a></li>
-        <li><a href="profile.html" class="nav-link">Profile</a></li>
-      </ul>
+  <!-- Global Header -->
+  <header class="global-header">
+    <div class="header-container">
+      <div class="brand-logo" onclick="window.location.href='dashboard.html'">UniDesk</div>
+
+      <nav class="header-nav">
+        <div class="hamburger" id="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <ul class="nav-links" id="navLinks">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="#" class="nav-link">Reports</a></li>
+          <li><a href="outlook-calendar.html" class="nav-link">Calendar</a></li>
+          <li><a href="aboutus.html" class="nav-link">About Us</a></li>
+        </ul>
+
+        <div class="profile-container">
+          <div class="profile-icon" id="profileIcon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="profile.html" class="dropdown-item">View Profile</a>
+            <a href="#" class="dropdown-item" id="dropdownLogoutBtn">Logout</a>
+          </div>
+        </div>
+      </nav>
     </div>
-  </nav>
+  </header>
 
   <div class="notes-header">
     <div class="container" style="max-width:1400px; padding:0;">
@@ -198,9 +221,46 @@
   </div>
 
   <script>
+    // Header Interactions
+    const profileIcon = document.getElementById('profileIcon');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('navLinks');
+
+    if (profileIcon) {
+      profileIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileDropdown.classList.toggle('show');
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (profileDropdown && !profileDropdown.contains(e.target) && e.target !== profileIcon) {
+        profileDropdown.classList.remove('show');
+      }
+    });
+
+    if (hamburger) {
+      hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        navLinks.classList.toggle('mobile-active');
+      });
+    }
+
+    const handleLogout = (e) => {
+      e.preventDefault();
+      sessionStorage.removeItem("userEmail");
+      sessionStorage.removeItem("isLoggedIn");
+      window.location.href = "index.html";
+    };
+
+    const dropdownLogoutBtn = document.getElementById("dropdownLogoutBtn");
+    if (dropdownLogoutBtn) dropdownLogoutBtn.onclick = handleLogout;
+
+    // Notes Page Script
     const API_BASE = window.location.origin;
-    const userEmail = sessionStorage.getItem('userEmail');
-    if (!userEmail) window.location.href = 'index.html';
+    const user_email = sessionStorage.getItem('userEmail');
+    if (!user_email) window.location.href = 'index.html';
 
     let allNotes = [];
     let isRecording = false;
@@ -209,7 +269,7 @@
 
     async function loadNotes() {
       try {
-        const res = await fetch(`${API_BASE}/notes/${encodeURIComponent(userEmail)}`);
+        const res = await fetch(`${API_BASE}/notes/${encodeURIComponent(user_email)}`);
         if (res.ok) {
           const data = await res.json();
           allNotes = Array.isArray(data) ? data : [];
@@ -226,15 +286,17 @@
       }
 
       grid.innerHTML = notes.map(note => `
-            <div class="note-card ${note.type}">
-                <div class="note-date">${new Date(note.created_date).toLocaleDateString()}</div>
-                <div class="note-content">${note.type === 'voice' ? '🎤 Voice Note' : note.content}</div>
-                ${note.type === 'voice' ? '<div style="margin-top:10px; font-size:0.8rem; color:var(--text-secondary);">Audio playback not fully implemented in redesign demo</div>' : ''}
-                <div style="margin-top:10px; display:flex; justify-content:flex-end;">
-                    <button onclick="deleteNote(${note.id})" style="background:none; border:none; color:var(--text-secondary); cursor:pointer;">🗑️</button>
-                </div>
-            </div>
-        `).join('');
+    <div class="note-card text">
+      <div class="note-date">${new Date(note.created_date).toLocaleDateString()}</div>
+      <div class="note-content">
+        <strong style="display:block; margin-bottom:8px; color:var(--accent-quaternary);">${note.title || 'Untitled'}</strong>
+        ${note.content}
+      </div>
+      <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+        <button onclick="deleteNote(${note.id})" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;">🗑️</button>
+      </div>
+    </div>
+  `).join('');
     }
 
     function applyFilters() {
@@ -255,15 +317,29 @@
       if (!text.trim()) return;
 
       try {
-        await fetch(`${API_BASE}/notes`, {
+        const res = await fetch(`${API_BASE}/notes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userEmail, type: 'text', content: text })
+          body: JSON.stringify({
+            user_email: user_email,
+            title: 'Quick Note',
+            content: text,
+            created_date: new Date().toISOString()
+          })
         });
+
+        if (!res.ok) {
+          alert('Error saving note');
+          return;
+        }
+
         document.getElementById('noteContent').value = '';
         closeModals();
-        loadNotes();
-      } catch (e) { alert('Error saving note'); }
+        await loadNotes();
+      } catch (e) {
+        console.error('Error saving note:', e);
+        alert('Error saving note');
+      }
     }
 
     async function toggleRecording() {
@@ -285,7 +361,7 @@
           await fetch(`${API_BASE}/notes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userEmail, type: 'voice', content: 'Voice Note' })
+            body: JSON.stringify({ user_email, type: 'voice', content: 'Voice Note' })
           });
           closeModals();
           loadNotes();
