@@ -232,9 +232,14 @@
             style="width:100%; padding:10px; border:1px solid var(--border-color);"></textarea>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-          <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
-          <button type="submit" class="btn" style="background:var(--accent-tertiary);">Save</button>
+        <div style="display:flex; justify-content:space-between; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-outline" id="deleteBtn" onclick="deleteGoal()"
+            style="border-color:var(--accent-quaternary); color:var(--accent-quaternary); display:none;">Delete
+            Goal</button>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
+            <button type="submit" class="btn" style="background:var(--accent-tertiary);">Save</button>
+          </div>
         </div>
       </form>
     </div>
@@ -289,7 +294,7 @@
 
     async function loadGoals() {
       try {
-        const res = await fetch(`${API_BASE}/career/${encodeURIComponent(userEmail)}`);
+        const res = await fetch(`${API_BASE}/career_goals/${encodeURIComponent(userEmail)}`);
         if (res.ok) {
           goals = await res.json();
           renderGoals();
@@ -302,7 +307,7 @@
       const grid = document.getElementById('goalsGrid');
       const type = document.getElementById('typeFilter').value;
 
-      const filtered = type === 'all' ? goals : goals.filter(g => g.type === type);
+      const filtered = type === 'all' ? goals : goals.filter(g => g.goal_type === type);
 
       if (!filtered.length) {
         grid.innerHTML = '<div style="text-align:center; grid-column:1/-1;">No goals found</div>';
@@ -313,7 +318,7 @@
               <div class="goal-card" onclick="editGoal(${g.id})">
                   <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                       <div class="goal-title">${g.title}</div>
-                      <span style="font-size:0.8rem; background:#f4f4f4; padding:2px 8px; border-radius:4px;">${g.type}</span>
+                      <span style="font-size:0.8rem; background:#f4f4f4; padding:2px 8px; border-radius:4px;">${g.goal_type}</span>
                   </div>
                   <div class="progress-bar-bg">
                       <div class="progress-bar-fill" style="width:${g.progress}%"></div>
@@ -339,6 +344,7 @@
       document.getElementById('goalForm').reset();
       document.getElementById('progVal').innerText = '0';
       document.getElementById('modalTitle').innerText = 'New Goal';
+      document.getElementById('deleteBtn').style.display = 'none';
       document.getElementById('goalModal').classList.add('active');
     }
 
@@ -347,11 +353,12 @@
       if (!g) return;
       editingId = id;
       document.getElementById('goalTitle').value = g.title;
-      document.getElementById('goalType').value = g.type;
+      document.getElementById('goalType').value = g.goal_type;
       document.getElementById('goalProgress').value = g.progress;
       document.getElementById('progVal').innerText = g.progress;
       document.getElementById('goalDesc').value = g.description;
       document.getElementById('modalTitle').innerText = 'Edit Goal';
+      document.getElementById('deleteBtn').style.display = 'block';
       document.getElementById('goalModal').classList.add('active');
     }
 
@@ -360,14 +367,14 @@
     async function saveGoal(e) {
       e.preventDefault();
       const data = {
-        userEmail,
+        user_email: userEmail,
         title: document.getElementById('goalTitle').value,
-        type: document.getElementById('goalType').value,
+        goal_type: document.getElementById('goalType').value,
         progress: document.getElementById('goalProgress').value,
         description: document.getElementById('goalDesc').value
       };
 
-      const url = editingId ? `${API_BASE}/career/${editingId}` : `${API_BASE}/career`;
+      const url = editingId ? `${API_BASE}/career_goals/${editingId}` : `${API_BASE}/career_goals`;
       const method = editingId ? 'PUT' : 'POST';
 
       try {
@@ -375,6 +382,17 @@
         closeModal();
         loadGoals();
       } catch (e) { alert('Error saving'); }
+    }
+
+    async function deleteGoal() {
+      if (!editingId) return;
+      if (!confirm('Are you sure you want to delete this goal? This action cannot be undone.')) return;
+
+      try {
+        await fetch(`${API_BASE}/career_goals/${editingId}`, { method: 'DELETE' });
+        closeModal();
+        loadGoals();
+      } catch (e) { alert('Error deleting goal'); }
     }
   </script>
 </body>

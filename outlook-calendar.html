@@ -159,7 +159,7 @@
         recurrence: 'none', showAs: 'busy', priority: 'normal', isOnline: false, meetingLink: ''
       });
 
-      const userEmail = sessionStorage.getItem('userEmail') || 'user@example.com';
+      const userEmail = (sessionStorage.getItem('userEmail') || 'user@example.com').toLowerCase().trim();
       const API_BASE = window.location.origin;
 
       useEffect(() => {
@@ -189,15 +189,82 @@
       };
 
       const saveEvent = async () => {
-        // [Existing Logic Preserved]
-        alert('Event saved (Demo Mode)');
-        closeModal();
+        if (!eventForm.title || !eventForm.startDate) {
+          alert('Please fill in the required fields (Title and Date)');
+          return;
+        }
+
+        try {
+          const eventData = {
+            userEmail: userEmail,
+            title: eventForm.title,
+            description: eventForm.description || '',
+            date: eventForm.startDate,
+            start: eventForm.startTime || null,
+            end: eventForm.endTime || null,
+            location: eventForm.location || '',
+            category: eventForm.category || 'Work',
+            attendees: eventForm.attendees || '',
+            reminder: parseInt(eventForm.reminder) || 15,
+            isAllDay: eventForm.isAllDay || false,
+            recurrence: eventForm.recurrence || 'none',
+            recurrenceEnd: eventForm.recurrenceEnd || null,
+            showAs: eventForm.showAs || 'busy',
+            priority: eventForm.priority || 'normal',
+            isOnline: eventForm.isOnline || false,
+            meetingLink: eventForm.meetingLink || '',
+            repeatWeekly: false
+          };
+
+          let response;
+          if (selectedEvent && selectedEvent.id) {
+            // Update existing event
+            response = await fetch(`${API_BASE}/events/${selectedEvent.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(eventData)
+            });
+          } else {
+            // Create new event
+            response = await fetch(`${API_BASE}/events`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(eventData)
+            });
+          }
+
+          if (response.ok) {
+            await loadEvents();
+            closeModal();
+          } else {
+            alert('Failed to save event. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error saving event:', error);
+          alert('Error saving event. Please check your connection.');
+        }
       };
 
       const deleteEvent = async () => {
-        // [Existing Logic Preserved]
-        alert('Event deleted (Demo Mode)');
-        closeModal();
+        if (!selectedEvent || !selectedEvent.id) return;
+
+        if (!confirm('Are you sure you want to delete this event?')) return;
+
+        try {
+          const response = await fetch(`${API_BASE}/events/${selectedEvent.id}`, {
+            method: 'DELETE'
+          });
+
+          if (response.ok) {
+            await loadEvents();
+            closeModal();
+          } else {
+            alert('Failed to delete event. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error deleting event:', error);
+          alert('Error deleting event. Please check your connection.');
+        }
       };
 
       const openModal = (date = null, event = null) => {
@@ -272,10 +339,20 @@
               </div>
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event, idx) => (
-                  <div key={idx} className={`text-xs p-1 rounded truncate ${getCategoryColor(event.category)} text-white shadow-sm`}>
+                  <div
+                    key={idx}
+                    className={`text-xs p-1 rounded truncate ${getCategoryColor(event.category)} text-white shadow-sm cursor-pointer hover:opacity-80 transition`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openModal(null, event);
+                    }}
+                  >
                     {event.startTime && `${event.startTime} `}{event.title}
                   </div>
                 ))}
+                {dayEvents.length > 3 && (
+                  <div className="text-xs text-brand-brown font-semibold">+{dayEvents.length - 3} more</div>
+                )}
               </div>
             </div>
           );
@@ -367,9 +444,14 @@
 
                   <textarea placeholder="Description" rows="3" className="w-full p-2 bg-brand-base rounded resize-none" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })}></textarea>
                 </div>
-                <div className="p-6 bg-brand-base rounded-b-xl flex justify-end gap-3">
-                  <button onClick={closeModal} className="px-4 py-2 text-brand-dark font-bold hover:underline">Cancel</button>
-                  <button onClick={saveEvent} className="px-6 py-2 bg-brand-brown text-white rounded shadow hover:bg-brand-dark transition font-bold">Save Event</button>
+                <div className="p-6 bg-brand-base rounded-b-xl flex justify-between gap-3">
+                  {selectedEvent && selectedEvent.id && (
+                    <button onClick={deleteEvent} className="px-4 py-2 text-brand-red font-bold border border-brand-red rounded hover:bg-brand-red hover:text-white transition">Delete</button>
+                  )}
+                  <div className="flex gap-3 ml-auto">
+                    <button onClick={closeModal} className="px-4 py-2 text-brand-dark font-bold hover:underline">Cancel</button>
+                    <button onClick={saveEvent} className="px-6 py-2 bg-brand-brown text-white rounded shadow hover:bg-brand-dark transition font-bold">Save Event</button>
+                  </div>
                 </div>
               </div>
             </div>

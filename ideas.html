@@ -475,7 +475,7 @@
     async function saveIdea(e) {
       e.preventDefault();
       const data = {
-        userEmail,
+        user_email: userEmail,
         title: document.getElementById('titleInput').value,
         content: document.getElementById('contentInput').value,
         category: document.getElementById('categoryInput').value,
